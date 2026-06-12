@@ -55,14 +55,6 @@ function renderLogSummary(text, label) {
 
     <div class="timeline-panel">
       <h3>Execution Timeline</h3>
-      <div class="timeline-controls">
-        <button id="timelineZoomOut" title="Zoom out">-</button>
-        <span id="timelineZoomLabel">100%</span>
-        <button id="timelineZoomIn" title="Zoom in">+</button>
-        <button id="timelineZoomReset" title="Reset zoom">Reset</button>
-        <button id="timelineClearSelection" title="Clear selection">Clear</button>
-        <span class="timeline-hint">Drag on the timeline to select a time range</span>
-      </div>
       ${renderTimeline(result.events)}
     </div>
 
@@ -204,15 +196,17 @@ function renderTimeline(events) {
 }
 
 function attachInteractionHandlers() {
-  // timeline clicks -> open line in editor
-  const timelineEvents = document.querySelectorAll('.timeline-event');
-  timelineEvents.forEach((el) => {
+  // timeline markers -> open line in editor
+  const markers = document.querySelectorAll('.timeline-marker');
+  markers.forEach((el) => {
     el.addEventListener('click', (ev) => {
       const idx = el.getAttribute('data-line-index');
       if (idx != null) {
         vscode.postMessage({ type: 'openLine', lineIndex: Number(idx) });
       }
     });
+    el.addEventListener('mouseenter', () => el.classList.add('hover'));
+    el.addEventListener('mouseleave', () => el.classList.remove('hover'));
   });
 
   // category bar clicks -> request matching lines from extension
@@ -226,88 +220,6 @@ function attachInteractionHandlers() {
       }
     });
   });
-
-  // timeline zoom controls
-  const zoomIn = document.getElementById('timelineZoomIn');
-  const zoomOut = document.getElementById('timelineZoomOut');
-  const zoomReset = document.getElementById('timelineZoomReset');
-  const zoomLabel = document.getElementById('timelineZoomLabel');
-  const timelineEl = document.querySelector('.timeline');
-  if (timelineEl) {
-    let zoom = Number(timelineEl.dataset.zoom) || 1;
-    const applyZoom = (z) => {
-      zoom = Math.max(0.5, Math.min(2.0, z));
-      timelineEl.style.fontSize = `${Math.round(zoom * 100)}%`;
-      timelineEl.dataset.zoom = String(zoom);
-      if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
-    };
-
-    if (zoomIn) zoomIn.addEventListener('click', () => applyZoom(zoom + 0.15));
-    if (zoomOut) zoomOut.addEventListener('click', () => applyZoom(zoom - 0.15));
-    if (zoomReset) zoomReset.addEventListener('click', () => applyZoom(1));
-  }
-
-  // timeline drag selection (scrub/zoom range)
-  if (timelineEl) {
-    let selecting = false;
-    let selStartX = 0;
-    let selEl = null;
-    const clearSelection = () => {
-      if (selEl && selEl.parentNode) selEl.parentNode.removeChild(selEl);
-      selEl = null;
-      selecting = false;
-      timelineEl.querySelectorAll('.timeline-event').forEach((ev) => ev.classList.remove('dimmed'));
-    };
-
-    const toTime = (clientX) => {
-      const rect = timelineEl.getBoundingClientRect();
-      const min = Number(timelineEl.dataset.minTime) || 0;
-      const max = Number(timelineEl.dataset.maxTime) || min + 1;
-      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      return Math.round(min + ratio * (max - min));
-    };
-
-    timelineEl.addEventListener('mousedown', (ev) => {
-      if (ev.button !== 0) return; // only left
-      selecting = true;
-      selStartX = ev.clientX;
-      selEl = document.createElement('div');
-      selEl.className = 'timeline-selection';
-      selEl.style.left = `${ev.clientX - timelineEl.getBoundingClientRect().left}px`;
-      selEl.style.width = '0px';
-      timelineEl.appendChild(selEl);
-    });
-
-    window.addEventListener('mousemove', (ev) => {
-      if (!selecting || !selEl) return;
-      const rect = timelineEl.getBoundingClientRect();
-      const left = Math.min(selStartX, ev.clientX) - rect.left;
-      const right = Math.max(selStartX, ev.clientX) - rect.left;
-      selEl.style.left = `${Math.max(0, left)}px`;
-      selEl.style.width = `${Math.max(2, right - left)}px`;
-      // highlight events within selection
-      const startTime = toTime(Math.min(selStartX, ev.clientX));
-      const endTime = toTime(Math.max(selStartX, ev.clientX));
-      timelineEl.querySelectorAll('.timeline-event').forEach((evEl) => {
-        const t = Number(evEl.getAttribute('data-time-ms')) || 0;
-        if (t < startTime || t > endTime) evEl.classList.add('dimmed');
-        else evEl.classList.remove('dimmed');
-      });
-    });
-
-    window.addEventListener('mouseup', (ev) => {
-      if (!selecting) return;
-      selecting = false;
-      // if selection is tiny, clear
-      if (selEl && parseInt(selEl.style.width || '0') < 6) {
-        clearSelection();
-      }
-    });
-
-    // add clear-selection button wiring
-    const clearBtn = document.getElementById('timelineClearSelection');
-    if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
-  }
 }
 
 // handle messages coming from extension back to webview (e.g. category lines)
@@ -350,23 +262,23 @@ function renderCategoryBars(categories) {
     return '<p class="muted">No structured categories detected yet.</p>';
   }
 
-  const maxCount = Math.max(...entries.map(([, count]) => count));
+  const total = entries.reduce((s, [, c]) => s + c, 0) || 1;
   const bars = entries
     .map(([key, count]) => {
-      const pct = (count / maxCount) * 100;
-      const width = Math.round(pct);
+      const pctOfTotal = Math.round((count / total) * 100);
+      const width = Math.max(2, Math.round((count / total) * 100));
       return `
-        <div class="bar-row" title="${escapeHtml(key)} — ${count}" role="button" aria-label="${escapeHtml(key)} ${count}">
-          <span class="bar-label">${escapeHtml(key)}</span>
+        <div class="bar-row" title="${escapeHtml(key)} — ${count} events" role="button" aria-label="${escapeHtml(key)} ${count}">
+          <span class="bar-label full-label">${escapeHtml(key)}</span>
           <div class="bar-track">
             <div class="bar-fill" style="width: ${width}%;"></div>
           </div>
-          <span class="bar-count">${count}</span>
+          <span class="bar-count">${pctOfTotal}%</span>
         </div>
       `;
     })
     .join('');
-  
+
   return `<div class="chart-container">${bars}</div>`;
 }
 

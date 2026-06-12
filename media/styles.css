@@ -252,19 +252,18 @@ button:hover {
 
 .bar-row {
   display: grid;
-  grid-template-columns: 140px 1fr 50px;
+  grid-template-columns: 260px 1fr 56px;
   gap: 12px;
   align-items: center;
   margin-bottom: 10px;
 }
 
 .bar-label {
-  min-width: 140px;
+  min-width: 0;
   color: var(--vscode-descriptionForeground);
-  font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.95rem;
+  white-space: normal;
+  overflow: visible;
 }
 
 .bar-track {
