@@ -1,0 +1,48 @@
+{
+  "name": "sf-log-analyzer",
+  "displayName": "SF Log Analyzer",
+  "description": "Visualize Salesforce debug logs in a VS Code webview.",
+  "version": "0.0.1",
+  "publisher": "nwmorph",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:sf-log-analyzer.openLogVisualizer",
+    "onCommand:sf-log-analyzer.loadActiveDebugLog"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nwmorph/sf-log-analyzer.git"
+  },
+  "author": "Niklas Waller",
+  "license": "MIT",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sf-log-analyzer.openLogVisualizer",
+        "title": "SF Log Analyzer: Open Visualizer"
+      },
+      {
+        "command": "sf-log-analyzer.loadActiveDebugLog",
+        "title": "SF Log Analyzer: Load Active Editor Log"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.0.0"
+  }
+}

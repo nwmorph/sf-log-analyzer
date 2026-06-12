@@ -1,0 +1,157 @@
+:root {
+  color-scheme: light dark;
+  font-family: var(--vscode-font-family, 'Segoe WPC', 'Segoe UI', sans-serif);
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+}
+
+.page {
+  padding: 24px;
+}
+
+header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+}
+
+header p {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+
+button {
+  border: none;
+  border-radius: 5px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.summary {
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 10px;
+  padding: 20px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.summary.empty {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+}
+
+.placeholder h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+}
+
+.placeholder p {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--vscode-sideBar-background);
+}
+
+.stat-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.chart-panel {
+  margin-bottom: 24px;
+}
+
+.chart-panel h3,
+.text-section h3 {
+  margin-top: 0;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bar-label {
+  min-width: 120px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.bar-track {
+  height: 14px;
+  background: var(--vscode-editorWidget-border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--vscode-terminalAnsiGreen);
+}
+
+.bar-count {
+  min-width: 36px;
+  text-align: right;
+}
+
+.text-section pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground);
+}
