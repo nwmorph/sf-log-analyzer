@@ -5,6 +5,7 @@ export class LogPanel {
   private readonly panel: vscode.WebviewPanel;
   private readonly extensionUri: vscode.Uri;
   private disposables: vscode.Disposable[] = [];
+  private currentLogUri: vscode.Uri | undefined;
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this.panel = panel;
@@ -24,11 +25,14 @@ export class LogPanel {
     }, null, this.disposables);
   }
 
-  public static createOrShow(extensionUri: vscode.Uri): LogPanel {
+  public static createOrShow(extensionUri: vscode.Uri, fileUri?: vscode.Uri): LogPanel {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
     if (LogPanel.currentPanel) {
       LogPanel.currentPanel.panel.reveal(column);
+      if (fileUri) {
+        LogPanel.currentPanel.loadAndDisplay(fileUri);
+      }
       return LogPanel.currentPanel;
     }
 
@@ -43,11 +47,25 @@ export class LogPanel {
     );
 
     LogPanel.currentPanel = new LogPanel(panel, extensionUri);
+    if (fileUri) {
+      LogPanel.currentPanel.loadAndDisplay(fileUri);
+    }
     return LogPanel.currentPanel;
   }
 
   public postLogText(text: string, label?: string) {
     this.panel.webview.postMessage({ type: 'logText', text, label });
+  }
+
+  private async loadAndDisplay(fileUri: vscode.Uri) {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(fileUri);
+      const text = Buffer.from(bytes).toString('utf8');
+      this.postLogText(text, fileUri.fsPath);
+      this.currentLogUri = fileUri;
+    } catch (error) {
+      vscode.window.showErrorMessage('Unable to read the selected log file.');
+    }
   }
 
   public dispose() {

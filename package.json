@@ -11,7 +11,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:sf-log-analyzer.openLogVisualizer"
+    "onCommand:sf-log-analyzer.openLogVisualizer",
+    "onCommand:sf-log-analyzer.loadDebugLog",
+    "onCustomEditor:sf-log-analyzer.debugLog"
   ],
   "main": "./out/extension.js",
   "scripts": {
@@ -31,6 +33,31 @@
       {
         "command": "sf-log-analyzer.openLogVisualizer",
         "title": "SF Log Analyzer: Open Visualizer"
+      },
+      {
+        "command": "sf-log-analyzer.loadDebugLog",
+        "title": "SF Log Analyzer: Load in Analyzer"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "sf-log-analyzer.loadDebugLog",
+          "when": "resourceExtname == .log",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "sf-log-analyzer.debugLog",
+        "displayName": "SF Log Analyzer",
+        "selector": [
+          {
+            "filenamePattern": "*.log"
+          }
+        ],
+        "priority": "option"
       }
     ]
   },
