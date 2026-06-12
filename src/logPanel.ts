@@ -21,6 +21,16 @@ export class LogPanel {
         case 'loadFromFile':
           await this.loadFromFile();
           return;
+        case 'openLine':
+          if (typeof message.lineIndex === 'number') {
+            await this.openLineInEditor(message.lineIndex);
+          }
+          return;
+        case 'getCategoryLines':
+          if (typeof message.category === 'string') {
+            await this.provideCategoryLines(message.category);
+          }
+          return;
       }
     }, null, this.disposables);
   }
@@ -101,6 +111,50 @@ export class LogPanel {
       this.postLogText(text, uri[0].fsPath);
     } catch (error) {
       vscode.window.showErrorMessage('Unable to read the selected log file.');
+    }
+  }
+
+  private async openLineInEditor(lineIndex: number) {
+    if (!this.currentLogUri) {
+      vscode.window.showInformationMessage('No log file is currently loaded in the analyzer.');
+      return;
+    }
+
+    try {
+      const doc = await vscode.workspace.openTextDocument(this.currentLogUri);
+      const editor = await vscode.window.showTextDocument(doc, { preview: true });
+      const pos = new vscode.Position(lineIndex, 0);
+      const range = new vscode.Range(pos, pos);
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+      editor.selection = new vscode.Selection(pos, pos);
+    } catch (error) {
+      vscode.window.showErrorMessage('Unable to open the log file in editor.');
+    }
+  }
+
+  private async provideCategoryLines(category: string) {
+    if (!this.currentLogUri) {
+      this.panel.webview.postMessage({ type: 'categoryLines', category, lines: [] });
+      return;
+    }
+
+    try {
+      const bytes = await vscode.workspace.fs.readFile(this.currentLogUri);
+      const text = Buffer.from(bytes).toString('utf8');
+      const lines = text.split(/\r?\n/);
+      const matches: Array<{ index: number; text: string }> = [];
+      for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split('|');
+        const cat = parts.length >= 2 ? parts[1].trim() : '';
+        if (cat === category || lines[i].includes(category)) {
+          matches.push({ index: i, text: lines[i] });
+        }
+        if (matches.length > 500) break;
+      }
+
+      this.panel.webview.postMessage({ type: 'categoryLines', category, lines: matches });
+    } catch (error) {
+      this.panel.webview.postMessage({ type: 'categoryLines', category, lines: [] });
     }
   }
 

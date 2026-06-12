@@ -62,7 +62,12 @@ function renderLogSummary(text, label) {
       <h3>Event Categories</h3>
       ${renderCategoryBars(result.categories)}
     </div>
+
+    <div id="categoryDetails"></div>
   `;
+
+  // attach interaction handlers after content is rendered
+  attachInteractionHandlers();
 }
 
 function parseLog(text) {
@@ -85,7 +90,8 @@ function parseLog(text) {
     methodEntry: 0
   };
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     // Salesforce debug log format: HH:MM:SS.m (cpu_time)|CATEGORY|details
     const timeMatch = line.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d)/);
     const parts = line.split('|');
@@ -122,7 +128,7 @@ function parseLog(text) {
         const isDml = category.includes('DML');
 
         if (isCodeUnit || isMethodEntry || isUserDebug || isError || isSoql || isDml) {
-          events.push({ time: timeStr, category, line });
+          events.push({ time: timeStr, category, line, lineIndex: i });
         }
       }
     }
@@ -170,7 +176,7 @@ function renderTimeline(events) {
         .map((event, idx) => {
           const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
           return `
-          <div class="timeline-event ${isError ? 'error' : ''}">
+          <div class="timeline-event ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" title="${escapeHtml(event.line)}">
             <span class="timeline-time">${event.time}</span>
             <span class="timeline-type">${escapeHtml(event.category)}</span>
           </div>
@@ -180,6 +186,65 @@ function renderTimeline(events) {
       ${events.length > 50 ? `<p class="muted">… and ${events.length - 50} more events</p>` : ''}
     </div>
   `;
+}
+
+function attachInteractionHandlers() {
+  // timeline clicks -> open line in editor
+  const timelineEvents = document.querySelectorAll('.timeline-event');
+  timelineEvents.forEach((el) => {
+    el.addEventListener('click', (ev) => {
+      const idx = el.getAttribute('data-line-index');
+      if (idx != null) {
+        vscode.postMessage({ type: 'openLine', lineIndex: Number(idx) });
+      }
+    });
+  });
+
+  // category bar clicks -> request matching lines from extension
+  const barRows = document.querySelectorAll('.bar-row');
+  barRows.forEach((row) => {
+    row.addEventListener('click', (ev) => {
+      const labelEl = row.querySelector('.bar-label');
+      if (labelEl) {
+        const category = labelEl.textContent.trim();
+        vscode.postMessage({ type: 'getCategoryLines', category });
+      }
+    });
+  });
+}
+
+// handle messages coming from extension back to webview (e.g. category lines)
+window.addEventListener('message', (event) => {
+  const message = event.data;
+  if (message.type === 'categoryLines') {
+    renderCategoryLines(message.category, message.lines || []);
+  }
+});
+
+function renderCategoryLines(category, lines) {
+  const container = document.getElementById('categoryDetails');
+  if (!container) return;
+  if (!lines || lines.length === 0) {
+    container.innerHTML = `<div class="chart-panel"><h3>Lines for ${escapeHtml(category)}</h3><p class="muted">No matching lines found.</p></div>`;
+    return;
+  }
+
+  const rows = lines
+    .map((l) => `<div class="cat-line" data-line-index="${l.index}"><span class="cat-line-index">${l.index}</span> <span class="cat-line-text">${escapeHtml(l.text)}</span></div>`)
+    .join('');
+
+  container.innerHTML = `<div class="chart-panel"><h3>Lines for ${escapeHtml(category)}</h3><div class="chart-container">${rows}</div></div>`;
+
+  // hook clicks to open the line
+  const lineEls = container.querySelectorAll('.cat-line');
+  lineEls.forEach((el) => {
+    el.addEventListener('click', () => {
+      const idx = el.getAttribute('data-line-index');
+      if (idx != null) {
+        vscode.postMessage({ type: 'openLine', lineIndex: Number(idx) });
+      }
+    });
+  });
 }
 
 function renderCategoryBars(categories) {
