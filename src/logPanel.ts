@@ -20,9 +20,6 @@ export class LogPanel {
         case 'loadFromFile':
           await this.loadFromFile();
           return;
-        case 'loadFromEditor':
-          this.loadFromActiveEditor();
-          return;
       }
     }, null, this.disposables);
   }
@@ -89,16 +86,6 @@ export class LogPanel {
     }
   }
 
-  private loadFromActiveEditor() {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      vscode.window.showInformationMessage('Open a Salesforce debug log file in the active editor first.');
-      return;
-    }
-
-    this.postLogText(editor.document.getText(), editor.document.fileName);
-  }
-
   private getHtmlForWebview(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.js'));
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'styles.css'));
@@ -122,7 +109,6 @@ export class LogPanel {
 
     <section class="actions">
       <button id="loadFile">Load log from file</button>
-      <button id="loadEditor">Use active editor log</button>
     </section>
 
     <section id="summary" class="summary empty">

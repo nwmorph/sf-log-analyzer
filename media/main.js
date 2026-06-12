@@ -1,15 +1,10 @@
 const vscode = acquireVsCodeApi();
 
 const loadFileButton = document.getElementById('loadFile');
-const loadEditorButton = document.getElementById('loadEditor');
 const summarySection = document.getElementById('summary');
 
 loadFileButton?.addEventListener('click', () => {
   vscode.postMessage({ type: 'loadFromFile' });
-});
-
-loadEditorButton?.addEventListener('click', () => {
-  vscode.postMessage({ type: 'loadFromEditor' });
 });
 
 window.addEventListener('message', (event) => {

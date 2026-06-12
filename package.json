@@ -11,8 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:sf-log-analyzer.openLogVisualizer",
-    "onCommand:sf-log-analyzer.loadActiveDebugLog"
+    "onCommand:sf-log-analyzer.openLogVisualizer"
   ],
   "main": "./out/extension.js",
   "scripts": {
@@ -32,10 +31,6 @@
       {
         "command": "sf-log-analyzer.openLogVisualizer",
         "title": "SF Log Analyzer: Open Visualizer"
-      },
-      {
-        "command": "sf-log-analyzer.loadActiveDebugLog",
-        "title": "SF Log Analyzer: Load Active Editor Log"
       }
     ]
   },
