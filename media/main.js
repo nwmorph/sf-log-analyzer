@@ -36,12 +36,12 @@ function renderLogSummary(text, label) {
         <span class="stat-value">${result.totalDurationMs ? result.totalDurationMs + ' ms' : '—'}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">SOQL queries</span>
-        <span class="stat-value">${result.soqlBegin}</span>
+        <span class="stat-label">Code units</span>
+        <span class="stat-value">${result.codeUnitStarted}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">DML operations</span>
-        <span class="stat-value">${result.dmlBegin}</span>
+        <span class="stat-label">Methods</span>
+        <span class="stat-value">${result.methodEntry}</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">Errors / Exceptions</span>
@@ -80,17 +80,20 @@ function parseLog(text) {
     userDebug: 0,
     soqlBegin: 0,
     dmlBegin: 0,
-    errors: 0
+    errors: 0,
+    codeUnitStarted: 0,
+    methodEntry: 0
   };
 
   for (const line of lines) {
-    const timeMatch = line.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d{3})/);
-    const categoryMatch = line.split('|');
-    const category = categoryMatch.length >= 2 ? categoryMatch[1].trim() : null;
+    // Salesforce debug log format: HH:MM:SS.m (cpu_time)|CATEGORY|details
+    const timeMatch = line.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d)/);
+    const parts = line.split('|');
+    const category = parts.length >= 2 ? parts[1].trim() : null;
 
-    // Track request start
-    if (line.includes('REQUEST_START') && !requestStart && timeMatch) {
-      requestStart = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+    // Track execution start as request start
+    if (category === 'EXECUTION_STARTED' && !requestStart && timeMatch) {
+      requestStart = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`;
     }
 
     // Extract time info
@@ -98,9 +101,9 @@ function parseLog(text) {
       const h = parseInt(timeMatch[1]);
       const m = parseInt(timeMatch[2]);
       const s = parseInt(timeMatch[3]);
-      const ms = parseInt(timeMatch[4]);
+      const ms = parseInt(timeMatch[4]) * 100;
       const totalMs = h * 3600000 + m * 60000 + s * 1000 + ms;
-      const timeStr = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+      const timeStr = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`;
 
       if (!firstTime) {
         firstTime = timeStr;
@@ -109,14 +112,16 @@ function parseLog(text) {
       lastTime = timeStr;
       lastTimeMs = totalMs;
 
-      // Extract significant events
+      // Extract significant events for timeline
       if (category) {
-        const isSoql = category.includes('SOQL_EXECUTE_BEGIN');
-        const isDml = category.includes('DML_BEGIN');
+        const isCodeUnit = category.includes('CODE_UNIT');
+        const isMethodEntry = category.includes('METHOD_ENTRY') || category.includes('SYSTEM_METHOD_ENTRY');
         const isUserDebug = category.includes('USER_DEBUG');
         const isError = category.includes('FATAL_ERROR') || category.includes('EXCEPTION_THROWN');
+        const isSoql = category.includes('SOQL');
+        const isDml = category.includes('DML');
 
-        if (isSoql || isDml || isUserDebug || isError) {
+        if (isCodeUnit || isMethodEntry || isUserDebug || isError || isSoql || isDml) {
           events.push({ time: timeStr, category, line });
         }
       }
@@ -128,8 +133,10 @@ function parseLog(text) {
     }
 
     if (line.includes('USER_DEBUG')) counts.userDebug += 1;
-    if (line.includes('SOQL_EXECUTE_BEGIN')) counts.soqlBegin += 1;
-    if (line.includes('DML_BEGIN')) counts.dmlBegin += 1;
+    if (line.includes('SOQL')) counts.soqlBegin += 1;
+    if (line.includes('DML')) counts.dmlBegin += 1;
+    if (line.includes('CODE_UNIT_STARTED')) counts.codeUnitStarted += 1;
+    if (line.includes('METHOD_ENTRY')) counts.methodEntry += 1;
     if (line.includes('FATAL_ERROR') || line.includes('EXCEPTION_THROWN')) counts.errors += 1;
   }
 
@@ -141,6 +148,8 @@ function parseLog(text) {
     soqlBegin: counts.soqlBegin,
     dmlBegin: counts.dmlBegin,
     errors: counts.errors,
+    codeUnitStarted: counts.codeUnitStarted,
+    methodEntry: counts.methodEntry,
     categories,
     events,
     duration: firstTime && lastTime ? `${firstTime} → ${lastTime}` : 'Duration unavailable',
