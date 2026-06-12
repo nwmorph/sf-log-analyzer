@@ -1,11 +1,5 @@
 const vscode = acquireVsCodeApi();
-
-const loadFileButton = document.getElementById('loadFile');
 const summarySection = document.getElementById('summary');
-
-loadFileButton?.addEventListener('click', () => {
-  vscode.postMessage({ type: 'loadFromFile' });
-});
 
 window.addEventListener('message', (event) => {
   const message = event.data;
@@ -21,22 +15,28 @@ function renderLogSummary(text, label) {
   summarySection.innerHTML = `
     <div class="summary-header">
       <div>
-        <h2>${label ? escapeHtml(label) : 'Debug log loaded'}</h2>
-        <p>${escapeHtml(result.duration)}</p>
+        <h2>${label ? escapeHtml(label.split('/').pop()) : 'Debug log loaded'}</h2>
+        <div class="header-meta">
+          <span>${formatBytes(text.length)}</span>
+          <span>•</span>
+          <span>${result.lineCount.toLocaleString()} lines</span>
+          <span>•</span>
+          <span>${result.duration}</span>
+        </div>
       </div>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card">
-        <span class="stat-label">Total lines</span>
-        <span class="stat-value">${result.lineCount}</span>
+        <span class="stat-label">Request start</span>
+        <span class="stat-value">${result.requestStart || '—'}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">User debug messages</span>
-        <span class="stat-value">${result.userDebug}</span>
+        <span class="stat-label">Total duration</span>
+        <span class="stat-value">${result.totalDurationMs ? result.totalDurationMs + ' ms' : '—'}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">SOQL operations</span>
+        <span class="stat-label">SOQL queries</span>
         <span class="stat-value">${result.soqlBegin}</span>
       </div>
       <div class="stat-card">
@@ -44,23 +44,23 @@ function renderLogSummary(text, label) {
         <span class="stat-value">${result.dmlBegin}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Errors / exceptions</span>
-        <span class="stat-value">${result.errors}</span>
+        <span class="stat-label">Errors / Exceptions</span>
+        <span class="stat-value error">${result.errors}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Warnings</span>
-        <span class="stat-value">${result.warnings}</span>
+        <span class="stat-label">User debug logs</span>
+        <span class="stat-value">${result.userDebug}</span>
       </div>
+    </div>
+
+    <div class="timeline-panel">
+      <h3>Execution Timeline</h3>
+      ${renderTimeline(result.events)}
     </div>
 
     <div class="chart-panel">
-      <h3>Execution categories</h3>
+      <h3>Event Categories</h3>
       ${renderCategoryBars(result.categories)}
-    </div>
-
-    <div class="text-section">
-      <h3>Top categories</h3>
-      <pre>${escapeHtml(result.topCategories)}</pre>
     </div>
   `;
 }
@@ -68,70 +68,107 @@ function renderLogSummary(text, label) {
 function parseLog(text) {
   const lines = text.split(/\r?\n/).filter((line) => line.length > 0);
   const categories = {};
+  const events = [];
   let firstTime = null;
   let lastTime = null;
+  let firstTimeMs = null;
+  let lastTimeMs = null;
+  let requestStart = null;
+
   const counts = {
     lineCount: lines.length,
     userDebug: 0,
-    codeUnitStarted: 0,
-    codeUnitFinished: 0,
     soqlBegin: 0,
-    soqlEnd: 0,
     dmlBegin: 0,
-    dmlEnd: 0,
-    warnings: 0,
     errors: 0
   };
 
   for (const line of lines) {
-    const parts = line.split('|');
-    if (parts.length >= 2) {
-      const category = parts[1].trim();
-      if (category) {
-        categories[category] = (categories[category] || 0) + 1;
+    const timeMatch = line.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d{3})/);
+    const categoryMatch = line.split('|');
+    const category = categoryMatch.length >= 2 ? categoryMatch[1].trim() : null;
+
+    // Track request start
+    if (line.includes('REQUEST_START') && !requestStart) {
+      requestStart = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}` : null;
+    }
+
+    // Extract time info
+    if (timeMatch) {
+      const h = parseInt(timeMatch[1]);
+      const m = parseInt(timeMatch[2]);
+      const s = parseInt(timeMatch[3]);
+      const ms = parseInt(timeMatch[4]);
+      const totalMs = h * 3600000 + m * 60000 + s * 1000 + ms;
+
+      if (!firstTime) {
+        firstTime = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+        firstTimeMs = totalMs;
+      }
+      lastTime = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+      lastTimeMs = totalMs;
+    }
+
+    // Count events
+    if (category) {
+      categories[category] = (categories[category] || 0) + 1;
+
+      // Track significant events for timeline
+      if (
+        category.includes('SOQL_EXECUTE_BEGIN') ||
+        category.includes('DML_BEGIN') ||
+        category.includes('USER_DEBUG') ||
+        category.includes('FATAL_ERROR') ||
+        category.includes('EXCEPTION_THROWN')
+      ) {
+        events.push({ time: firstTime || timeMatch?.[0], category, line });
       }
     }
 
     if (line.includes('USER_DEBUG')) counts.userDebug += 1;
-    if (line.includes('CODE_UNIT_STARTED')) counts.codeUnitStarted += 1;
-    if (line.includes('CODE_UNIT_FINISHED')) counts.codeUnitFinished += 1;
     if (line.includes('SOQL_EXECUTE_BEGIN')) counts.soqlBegin += 1;
-    if (line.includes('SOQL_EXECUTE_END')) counts.soqlEnd += 1;
     if (line.includes('DML_BEGIN')) counts.dmlBegin += 1;
-    if (line.includes('DML_END')) counts.dmlEnd += 1;
     if (line.includes('FATAL_ERROR') || line.includes('EXCEPTION_THROWN')) counts.errors += 1;
-    if (line.includes('WARN') || line.includes('WARNING')) counts.warnings += 1;
-
-    const timeMatch = line.match(/^(\d{2}:\d{2}:\d{2}\.\d{3})/);
-    if (timeMatch) {
-      if (!firstTime) {
-        firstTime = timeMatch[1];
-      }
-      lastTime = timeMatch[1];
-    }
   }
 
-  const topCategories = Object.entries(categories)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 10)
-    .map(([key, count]) => `${key}: ${count}`)
-    .join('\n');
+  const totalDurationMs = firstTimeMs && lastTimeMs ? lastTimeMs - firstTimeMs : null;
 
   return {
     lineCount: counts.lineCount,
     userDebug: counts.userDebug,
-    codeUnitStarted: counts.codeUnitStarted,
-    codeUnitFinished: counts.codeUnitFinished,
     soqlBegin: counts.soqlBegin,
-    soqlEnd: counts.soqlEnd,
     dmlBegin: counts.dmlBegin,
-    dmlEnd: counts.dmlEnd,
-    warnings: counts.warnings,
     errors: counts.errors,
     categories,
+    events,
     duration: firstTime && lastTime ? `${firstTime} → ${lastTime}` : 'Duration unavailable',
-    topCategories
+    requestStart,
+    totalDurationMs
   };
+}
+
+function renderTimeline(events) {
+  if (events.length === 0) {
+    return '<p class="muted">No execution events found.</p>';
+  }
+
+  const limited = events.slice(0, 50);
+  return `
+    <div class="timeline">
+      ${limited
+        .map((event, idx) => {
+          const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
+          return `
+          <div class="timeline-event ${isError ? 'error' : ''}">
+            <span class="timeline-time">${event.time}</span>
+            <span class="timeline-type">${escapeHtml(event.category)}</span>
+          </div>
+        `;
+        })
+        .join('')}
+      ${events.length > 50 ? `<p class="muted">… and ${events.length - 50} more events</p>` : ''}
+    </div>
+  `;
 }
 
 function renderCategoryBars(categories) {
@@ -164,4 +201,12 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

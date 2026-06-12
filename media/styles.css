@@ -26,6 +26,14 @@ header p {
   color: var(--vscode-descriptionForeground);
 }
 
+.header-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--vscode-descriptionForeground);
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -103,13 +111,60 @@ button:hover {
   font-weight: 600;
 }
 
-.chart-panel {
+.stat-value.error {
+  color: var(--vscode-terminalAnsiRed);
+}
+
+.timeline-panel {
   margin-bottom: 24px;
 }
 
-.chart-panel h3,
-.text-section h3 {
+.timeline-panel h3,
+.chart-panel h3 {
   margin-top: 0;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.timeline-event {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  font-size: 0.85rem;
+  padding: 6px;
+  border-left: 3px solid var(--vscode-terminalAnsiGreen);
+  background: var(--vscode-sideBar-background);
+  border-radius: 4px;
+}
+
+.timeline-event.error {
+  border-left-color: var(--vscode-terminalAnsiRed);
+}
+
+.timeline-time {
+  font-family: monospace;
+  color: var(--vscode-descriptionForeground);
+  font-weight: 600;
+}
+
+.timeline-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-panel {
+  margin-bottom: 24px;
 }
 
 .bar-row {
@@ -140,16 +195,6 @@ button:hover {
 .bar-count {
   min-width: 36px;
   text-align: right;
-}
-
-.text-section pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  background: var(--vscode-editorWidget-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 8px;
-  padding: 14px;
 }
 
 .muted {

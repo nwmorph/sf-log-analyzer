@@ -122,17 +122,13 @@ export class LogPanel {
   <div class="page">
     <header>
       <h1>SF Log Analyzer</h1>
-      <p>Load a Salesforce debug log to view a high-level execution summary.</p>
+      <p>Open a Salesforce debug log to view the execution summary and timeline.</p>
     </header>
-
-    <section class="actions">
-      <button id="loadFile">Load log from file</button>
-    </section>
 
     <section id="summary" class="summary empty">
       <div class="placeholder">
         <h2>No log loaded yet</h2>
-        <p>Open a Salesforce debug log file or use the active editor to start analysis.</p>
+        <p>Right-click a .log file or double-click to open it in this analyzer.</p>
       </div>
     </section>
   </div>
