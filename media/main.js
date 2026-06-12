@@ -189,7 +189,7 @@ function renderCategoryBars(categories) {
   }
 
   const maxCount = Math.max(...entries.map(([, count]) => count));
-  return entries
+  const bars = entries
     .map(([key, count]) => {
       const width = Math.max(6, Math.round((count / maxCount) * 100));
       return `
@@ -203,6 +203,8 @@ function renderCategoryBars(categories) {
       `;
     })
     .join('');
+  
+  return `<div class="chart-container">${bars}</div>`;
 }
 
 function escapeHtml(value) {

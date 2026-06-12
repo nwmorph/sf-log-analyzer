@@ -167,34 +167,55 @@ button:hover {
   margin-bottom: 24px;
 }
 
+.chart-panel h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.chart-container {
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--vscode-editorWidget-background);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .bar-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 140px 1fr 50px;
   gap: 12px;
   align-items: center;
   margin-bottom: 10px;
 }
 
 .bar-label {
-  min-width: 120px;
+  min-width: 140px;
   color: var(--vscode-descriptionForeground);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bar-track {
-  height: 14px;
+  height: 16px;
   background: var(--vscode-editorWidget-border);
-  border-radius: 7px;
+  border-radius: 8px;
   overflow: hidden;
+  flex-grow: 1;
 }
 
 .bar-fill {
   height: 100%;
   background: var(--vscode-terminalAnsiGreen);
+  transition: width 0.3s ease;
 }
 
 .bar-count {
   min-width: 36px;
   text-align: right;
+  font-weight: 600;
 }
 
 .muted {
