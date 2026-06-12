@@ -89,8 +89,8 @@ function parseLog(text) {
     const category = categoryMatch.length >= 2 ? categoryMatch[1].trim() : null;
 
     // Track request start
-    if (line.includes('REQUEST_START') && !requestStart) {
-      requestStart = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}` : null;
+    if (line.includes('REQUEST_START') && !requestStart && timeMatch) {
+      requestStart = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
     }
 
     // Extract time info
@@ -100,29 +100,31 @@ function parseLog(text) {
       const s = parseInt(timeMatch[3]);
       const ms = parseInt(timeMatch[4]);
       const totalMs = h * 3600000 + m * 60000 + s * 1000 + ms;
+      const timeStr = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
 
       if (!firstTime) {
-        firstTime = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+        firstTime = timeStr;
         firstTimeMs = totalMs;
       }
-      lastTime = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}.${timeMatch[4]}`;
+      lastTime = timeStr;
       lastTimeMs = totalMs;
+
+      // Extract significant events
+      if (category) {
+        const isSoql = category.includes('SOQL_EXECUTE_BEGIN');
+        const isDml = category.includes('DML_BEGIN');
+        const isUserDebug = category.includes('USER_DEBUG');
+        const isError = category.includes('FATAL_ERROR') || category.includes('EXCEPTION_THROWN');
+
+        if (isSoql || isDml || isUserDebug || isError) {
+          events.push({ time: timeStr, category, line });
+        }
+      }
     }
 
-    // Count events
+    // Count events and categories
     if (category) {
       categories[category] = (categories[category] || 0) + 1;
-
-      // Track significant events for timeline
-      if (
-        category.includes('SOQL_EXECUTE_BEGIN') ||
-        category.includes('DML_BEGIN') ||
-        category.includes('USER_DEBUG') ||
-        category.includes('FATAL_ERROR') ||
-        category.includes('EXCEPTION_THROWN')
-      ) {
-        events.push({ time: firstTime || timeMatch?.[0], category, line });
-      }
     }
 
     if (line.includes('USER_DEBUG')) counts.userDebug += 1;
