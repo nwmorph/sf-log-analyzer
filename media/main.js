@@ -177,25 +177,28 @@ function renderTimeline(events) {
     return '<p class="muted">No execution events found.</p>';
   }
 
-  const limited = events.slice(0, 200);
+  // Horizontal marker-based overview: place markers along a single timeline track
+  const limited = events.slice(0, 1000);
   const times = events.map((e) => e.timeMs || 0);
   const minTime = Math.min(...times);
   const maxTime = Math.max(...times);
+  const span = Math.max(1, maxTime - minTime);
+
+  const markers = limited
+    .map((event) => {
+      const pos = Math.round(((event.timeMs - minTime) / span) * 10000) / 100; // percentage with 2 decimals
+      const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
+      return `<div class="timeline-marker ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" data-time-ms="${event.timeMs}" style="left: ${pos}%;" title="${escapeHtml(event.time + ' — ' + event.category)}"></div>`;
+    })
+    .join('');
 
   return `
-    <div class="timeline" data-min-time="${minTime}" data-max-time="${maxTime}">
-      ${limited
-        .map((event, idx) => {
-          const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
-          return `
-          <div class="timeline-event ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" data-time-ms="${event.timeMs}" title="${escapeHtml(event.line)}">
-            <span class="timeline-time">${event.time}</span>
-            <span class="timeline-type">${escapeHtml(event.category)}</span>
-          </div>
-        `;
-        })
-        .join('')}
-      ${events.length > 200 ? `<p class="muted">… and ${events.length - 200} more events</p>` : ''}
+    <div class="timeline horizontal" data-min-time="${minTime}" data-max-time="${maxTime}">
+      <div class="timeline-track">${markers}</div>
+      <div class="timeline-axis">
+        <span class="axis-start">${limited.length ? limited[0].time : ''}</span>
+        <span class="axis-end">${limited.length ? limited[limited.length - 1].time : ''}</span>
+      </div>
     </div>
   `;
 }
@@ -352,14 +355,11 @@ function renderCategoryBars(categories) {
     .map(([key, count]) => {
       const pct = (count / maxCount) * 100;
       const width = Math.round(pct);
-      const showInside = pct >= 12; // place small label inside when wide enough
       return `
         <div class="bar-row" title="${escapeHtml(key)} — ${count}" role="button" aria-label="${escapeHtml(key)} ${count}">
           <span class="bar-label">${escapeHtml(key)}</span>
           <div class="bar-track">
-            <div class="bar-fill" style="width: ${width}%;">
-              ${showInside ? `<span class="bar-inside">${count}</span>` : `<span class="bar-dot" aria-hidden="true"></span>`}
-            </div>
+            <div class="bar-fill" style="width: ${width}%;"></div>
           </div>
           <span class="bar-count">${count}</span>
         </div>

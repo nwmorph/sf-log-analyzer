@@ -125,16 +125,50 @@ button:hover {
 }
 
 .timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 300px;
-  overflow-y: auto;
+  max-height: 220px;
+  overflow: hidden;
+}
+
+.timeline.horizontal {
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 8px;
   padding: 12px;
   background: var(--vscode-editorWidget-background);
+}
+
+.timeline-track {
   position: relative;
+  height: 64px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  margin-bottom: 8px;
+}
+
+.timeline-marker {
+  position: absolute;
+  top: 8px;
+  width: 8px;
+  height: 48px;
+  border-radius: 4px;
+  background: rgba(60, 160, 200, 0.75);
+  transform: translateX(-50%);
+  transition: transform 0.08s ease, background 0.1s ease, height 0.08s ease;
+}
+
+.timeline-marker:hover {
+  transform: translateX(-50%) scale(1.25);
+  height: 54px;
+}
+
+.timeline-marker.error {
+  background: rgba(220, 90, 90, 0.9);
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--vscode-descriptionForeground);
 }
 
 .timeline-event {
