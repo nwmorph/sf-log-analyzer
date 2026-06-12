@@ -147,6 +147,11 @@ button:hover {
   border-radius: 4px;
 }
 
+.timeline-event:hover {
+  background: var(--vscode-list-hoverBackground);
+  cursor: pointer;
+}
+
 .timeline-event.error {
   border-left-color: var(--vscode-terminalAnsiRed);
 }
@@ -210,6 +215,14 @@ button:hover {
   height: 100%;
   background: var(--vscode-terminalAnsiGreen);
   transition: width 0.3s ease;
+}
+
+.bar-row:hover .bar-fill {
+  background: linear-gradient(90deg, var(--vscode-terminalAnsiGreen), rgba(0,0,0,0.05));
+}
+
+.bar-row:hover {
+  cursor: pointer;
 }
 
 .bar-count {

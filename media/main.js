@@ -55,6 +55,12 @@ function renderLogSummary(text, label) {
 
     <div class="timeline-panel">
       <h3>Execution Timeline</h3>
+      <div class="timeline-controls">
+        <button id="timelineZoomOut" title="Zoom out">-</button>
+        <span id="timelineZoomLabel">100%</span>
+        <button id="timelineZoomIn" title="Zoom in">+</button>
+        <button id="timelineZoomReset" title="Reset zoom">Reset</button>
+      </div>
       ${renderTimeline(result.events)}
     </div>
 
@@ -211,6 +217,26 @@ function attachInteractionHandlers() {
       }
     });
   });
+
+  // timeline zoom controls
+  const zoomIn = document.getElementById('timelineZoomIn');
+  const zoomOut = document.getElementById('timelineZoomOut');
+  const zoomReset = document.getElementById('timelineZoomReset');
+  const zoomLabel = document.getElementById('timelineZoomLabel');
+  const timelineEl = document.querySelector('.timeline');
+  if (timelineEl) {
+    let zoom = Number(timelineEl.dataset.zoom) || 1;
+    const applyZoom = (z) => {
+      zoom = Math.max(0.5, Math.min(2.0, z));
+      timelineEl.style.fontSize = `${Math.round(zoom * 100)}%`;
+      timelineEl.dataset.zoom = String(zoom);
+      if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+    };
+
+    if (zoomIn) zoomIn.addEventListener('click', () => applyZoom(zoom + 0.15));
+    if (zoomOut) zoomOut.addEventListener('click', () => applyZoom(zoom - 0.15));
+    if (zoomReset) zoomReset.addEventListener('click', () => applyZoom(1));
+  }
 }
 
 // handle messages coming from extension back to webview (e.g. category lines)
@@ -258,7 +284,7 @@ function renderCategoryBars(categories) {
     .map(([key, count]) => {
       const width = Math.max(6, Math.round((count / maxCount) * 100));
       return `
-        <div class="bar-row">
+        <div class="bar-row" title="${escapeHtml(key)} — ${count}">
           <span class="bar-label">${escapeHtml(key)}</span>
           <div class="bar-track">
             <div class="bar-fill" style="width: ${width}%;"></div>
