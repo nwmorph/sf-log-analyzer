@@ -169,44 +169,76 @@ function renderTimeline(events) {
     return '<p class="muted">No execution events found.</p>';
   }
 
-  // Horizontal marker-based overview: place markers along a single timeline track
-  const limited = events.slice(0, 1000);
-  const times = events.map((e) => e.timeMs || 0);
-  const minTime = Math.min(...times);
-  const maxTime = Math.max(...times);
-  const span = Math.max(1, maxTime - minTime);
+  // Group events by category and calculate duration/frequency for each
+  const categoryPhases = {};
+  events.forEach((event) => {
+    const cat = event.category;
+    if (!categoryPhases[cat]) {
+      categoryPhases[cat] = { category: cat, events: [], firstTime: Infinity, lastTime: -Infinity };
+    }
+    categoryPhases[cat].events.push(event);
+    categoryPhases[cat].firstTime = Math.min(categoryPhases[cat].firstTime, event.timeMs);
+    categoryPhases[cat].lastTime = Math.max(categoryPhases[cat].lastTime, event.timeMs);
+  });
 
-  const markers = limited
-    .map((event) => {
-      const pos = Math.round(((event.timeMs - minTime) / span) * 10000) / 100; // percentage with 2 decimals
-      const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
-      return `<div class="timeline-marker ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" data-time-ms="${event.timeMs}" style="left: ${pos}%;" title="${escapeHtml(event.time + ' — ' + event.category)}"></div>`;
+  // Sort by first occurrence time
+  const phases = Object.values(categoryPhases).sort((a, b) => a.firstTime - b.firstTime);
+  const totalTimeSpan = phases.length > 0 
+    ? Math.max(...phases.map(p => p.lastTime)) - Math.min(...phases.map(p => p.firstTime))
+    : 1;
+
+  // Render phases as full-width colored horizontal bars
+  const colors = [
+    '#3ca0c8', '#00d4ff', '#ff6b6b', '#ffa500', '#4ecdc4', '#95e1d3',
+    '#f38181', '#aa96da', '#fcbad3', '#a8d8ea', '#ffcccb', '#fffacd'
+  ];
+
+  const segments = phases
+    .map((phase, idx) => {
+      const duration = Math.max(1, phase.lastTime - phase.firstTime);
+      const widthPct = Math.max(2, Math.round((duration / totalTimeSpan) * 1000) / 10); // at least 2%
+      const color = colors[idx % colors.length];
+      const isError = phase.category.includes('FATAL_ERROR') || phase.category.includes('EXCEPTION_THROWN');
+      const bgColor = isError ? '#d94545' : color;
+      const lineCount = phase.events.length;
+      
+      return `
+        <div class="timeline-segment" 
+             style="width: ${widthPct}%; background-color: ${bgColor};"
+             data-line-index="${phase.events[0].lineIndex}"
+             title="${escapeHtml(phase.category)} — ${lineCount} events — ${Math.round(duration)}ms">
+          <span class="segment-label">${escapeHtml(phase.category.substring(0, 12))}</span>
+        </div>
+      `;
     })
     .join('');
 
+  const firstTime = phases.length > 0 ? phases[0].events[0].time : '';
+  const lastTime = phases.length > 0 ? phases[phases.length - 1].events[phases[phases.length - 1].events.length - 1].time : '';
+
   return `
-    <div class="timeline horizontal" data-min-time="${minTime}" data-max-time="${maxTime}">
-      <div class="timeline-track">${markers}</div>
+    <div class="timeline-container">
+      <div class="timeline-bar-row">
+        ${segments}
+      </div>
       <div class="timeline-axis">
-        <span class="axis-start">${limited.length ? limited[0].time : ''}</span>
-        <span class="axis-end">${limited.length ? limited[limited.length - 1].time : ''}</span>
+        <span class="axis-start">${firstTime}</span>
+        <span class="axis-end">${lastTime}</span>
       </div>
     </div>
   `;
 }
 
 function attachInteractionHandlers() {
-  // timeline markers -> open line in editor
-  const markers = document.querySelectorAll('.timeline-marker');
-  markers.forEach((el) => {
+  // timeline segments -> open line in editor
+  const segments = document.querySelectorAll('.timeline-segment');
+  segments.forEach((el) => {
     el.addEventListener('click', (ev) => {
       const idx = el.getAttribute('data-line-index');
       if (idx != null) {
         vscode.postMessage({ type: 'openLine', lineIndex: Number(idx) });
       }
     });
-    el.addEventListener('mouseenter', () => el.classList.add('hover'));
-    el.addEventListener('mouseleave', () => el.classList.remove('hover'));
   });
 
   // category bar clicks -> request matching lines from extension
