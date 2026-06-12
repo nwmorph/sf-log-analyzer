@@ -134,6 +134,7 @@ button:hover {
   border-radius: 8px;
   padding: 12px;
   background: var(--vscode-editorWidget-background);
+  position: relative;
 }
 
 .timeline-event {
@@ -150,6 +151,35 @@ button:hover {
 .timeline-event:hover {
   background: var(--vscode-list-hoverBackground);
   cursor: pointer;
+}
+
+.timeline-event.dimmed {
+  opacity: 0.28;
+}
+
+.timeline-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(0,122,204,0.18), rgba(0,122,204,0.08));
+  border-left: 2px dashed rgba(0,122,204,0.6);
+  border-right: 2px dashed rgba(0,122,204,0.6);
+  pointer-events: none;
+  z-index: 20;
+  border-radius: 4px;
+}
+
+.timeline-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timeline-hint {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85rem;
+  margin-left: 8px;
 }
 
 .timeline-event.error {

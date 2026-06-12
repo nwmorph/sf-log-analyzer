@@ -60,6 +60,8 @@ function renderLogSummary(text, label) {
         <span id="timelineZoomLabel">100%</span>
         <button id="timelineZoomIn" title="Zoom in">+</button>
         <button id="timelineZoomReset" title="Reset zoom">Reset</button>
+        <button id="timelineClearSelection" title="Clear selection">Clear</button>
+        <span class="timeline-hint">Drag on the timeline to select a time range</span>
       </div>
       ${renderTimeline(result.events)}
     </div>
@@ -134,7 +136,7 @@ function parseLog(text) {
         const isDml = category.includes('DML');
 
         if (isCodeUnit || isMethodEntry || isUserDebug || isError || isSoql || isDml) {
-          events.push({ time: timeStr, category, line, lineIndex: i });
+          events.push({ time: timeStr, category, line, lineIndex: i, timeMs: totalMs });
         }
       }
     }
@@ -175,21 +177,25 @@ function renderTimeline(events) {
     return '<p class="muted">No execution events found.</p>';
   }
 
-  const limited = events.slice(0, 50);
+  const limited = events.slice(0, 200);
+  const times = events.map((e) => e.timeMs || 0);
+  const minTime = Math.min(...times);
+  const maxTime = Math.max(...times);
+
   return `
-    <div class="timeline">
+    <div class="timeline" data-min-time="${minTime}" data-max-time="${maxTime}">
       ${limited
         .map((event, idx) => {
           const isError = event.category.includes('FATAL_ERROR') || event.category.includes('EXCEPTION_THROWN');
           return `
-          <div class="timeline-event ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" title="${escapeHtml(event.line)}">
+          <div class="timeline-event ${isError ? 'error' : ''}" data-line-index="${event.lineIndex}" data-time-ms="${event.timeMs}" title="${escapeHtml(event.line)}">
             <span class="timeline-time">${event.time}</span>
             <span class="timeline-type">${escapeHtml(event.category)}</span>
           </div>
         `;
         })
         .join('')}
-      ${events.length > 50 ? `<p class="muted">… and ${events.length - 50} more events</p>` : ''}
+      ${events.length > 200 ? `<p class="muted">… and ${events.length - 200} more events</p>` : ''}
     </div>
   `;
 }
@@ -236,6 +242,68 @@ function attachInteractionHandlers() {
     if (zoomIn) zoomIn.addEventListener('click', () => applyZoom(zoom + 0.15));
     if (zoomOut) zoomOut.addEventListener('click', () => applyZoom(zoom - 0.15));
     if (zoomReset) zoomReset.addEventListener('click', () => applyZoom(1));
+  }
+
+  // timeline drag selection (scrub/zoom range)
+  if (timelineEl) {
+    let selecting = false;
+    let selStartX = 0;
+    let selEl = null;
+    const clearSelection = () => {
+      if (selEl && selEl.parentNode) selEl.parentNode.removeChild(selEl);
+      selEl = null;
+      selecting = false;
+      timelineEl.querySelectorAll('.timeline-event').forEach((ev) => ev.classList.remove('dimmed'));
+    };
+
+    const toTime = (clientX) => {
+      const rect = timelineEl.getBoundingClientRect();
+      const min = Number(timelineEl.dataset.minTime) || 0;
+      const max = Number(timelineEl.dataset.maxTime) || min + 1;
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      return Math.round(min + ratio * (max - min));
+    };
+
+    timelineEl.addEventListener('mousedown', (ev) => {
+      if (ev.button !== 0) return; // only left
+      selecting = true;
+      selStartX = ev.clientX;
+      selEl = document.createElement('div');
+      selEl.className = 'timeline-selection';
+      selEl.style.left = `${ev.clientX - timelineEl.getBoundingClientRect().left}px`;
+      selEl.style.width = '0px';
+      timelineEl.appendChild(selEl);
+    });
+
+    window.addEventListener('mousemove', (ev) => {
+      if (!selecting || !selEl) return;
+      const rect = timelineEl.getBoundingClientRect();
+      const left = Math.min(selStartX, ev.clientX) - rect.left;
+      const right = Math.max(selStartX, ev.clientX) - rect.left;
+      selEl.style.left = `${Math.max(0, left)}px`;
+      selEl.style.width = `${Math.max(2, right - left)}px`;
+      // highlight events within selection
+      const startTime = toTime(Math.min(selStartX, ev.clientX));
+      const endTime = toTime(Math.max(selStartX, ev.clientX));
+      timelineEl.querySelectorAll('.timeline-event').forEach((evEl) => {
+        const t = Number(evEl.getAttribute('data-time-ms')) || 0;
+        if (t < startTime || t > endTime) evEl.classList.add('dimmed');
+        else evEl.classList.remove('dimmed');
+      });
+    });
+
+    window.addEventListener('mouseup', (ev) => {
+      if (!selecting) return;
+      selecting = false;
+      // if selection is tiny, clear
+      if (selEl && parseInt(selEl.style.width || '0') < 6) {
+        clearSelection();
+      }
+    });
+
+    // add clear-selection button wiring
+    const clearBtn = document.getElementById('timelineClearSelection');
+    if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
   }
 }
 
