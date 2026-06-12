@@ -350,12 +350,16 @@ function renderCategoryBars(categories) {
   const maxCount = Math.max(...entries.map(([, count]) => count));
   const bars = entries
     .map(([key, count]) => {
-      const width = Math.max(6, Math.round((count / maxCount) * 100));
+      const pct = (count / maxCount) * 100;
+      const width = Math.round(pct);
+      const showInside = pct >= 12; // place small label inside when wide enough
       return `
-        <div class="bar-row" title="${escapeHtml(key)} — ${count}">
+        <div class="bar-row" title="${escapeHtml(key)} — ${count}" role="button" aria-label="${escapeHtml(key)} ${count}">
           <span class="bar-label">${escapeHtml(key)}</span>
           <div class="bar-track">
-            <div class="bar-fill" style="width: ${width}%;"></div>
+            <div class="bar-fill" style="width: ${width}%;">
+              ${showInside ? `<span class="bar-inside">${count}</span>` : `<span class="bar-dot" aria-hidden="true"></span>`}
+            </div>
           </div>
           <span class="bar-count">${count}</span>
         </div>
