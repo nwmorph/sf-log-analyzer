@@ -28,10 +28,6 @@ function renderLogSummary(text, label) {
 
     <div class="stats-grid">
       <div class="stat-card">
-        <span class="stat-label">Request start</span>
-        <span class="stat-value">${result.requestStart || '—'}</span>
-      </div>
-      <div class="stat-card">
         <span class="stat-label">Total duration</span>
         <span class="stat-value">${result.totalDurationMs ? result.totalDurationMs + ' ms' : '—'}</span>
       </div>
@@ -164,6 +160,33 @@ function parseLog(text) {
   };
 }
 
+function getCategoryDescription(category) {
+  // Translate technical categories into human-readable descriptions
+  const descriptions = {
+    'CODE_UNIT_STARTED': 'Code unit started',
+    'CODE_UNIT_FINISHED': 'Code unit finished',
+    'METHOD_ENTRY': 'Apex method called',
+    'METHOD_EXIT': 'Apex method returned',
+    'SYSTEM_METHOD_ENTRY': 'System method called',
+    'SYSTEM_METHOD_EXIT': 'System method returned',
+    'SOQL_EXECUTE': 'SOQL query executed',
+    'SOQL_BEGIN': 'SOQL query started',
+    'DML_BEGIN': 'DML operation started',
+    'DML_END': 'DML operation finished',
+    'EXECUTION_STARTED': 'Execution started',
+    'USER_DEBUG': 'Debug output',
+    'VARIABLE_ASSIGNMENT': 'Variable assigned',
+    'VARIABLE_SCOPE_BEGIN': 'Scope entered',
+    'HEAP_ALLOCATE': 'Memory allocated'
+  };
+
+  if (descriptions[category]) {
+    return descriptions[category];
+  }
+  // Return cleaned-up category name for unmapped ones
+  return category.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
+}
+
 function renderTimeline(events) {
   if (events.length === 0) {
     return '<p class="muted">No execution events found.</p>';
@@ -201,13 +224,14 @@ function renderTimeline(events) {
       const isError = phase.category.includes('FATAL_ERROR') || phase.category.includes('EXCEPTION_THROWN');
       const bgColor = isError ? '#d94545' : color;
       const lineCount = phase.events.length;
+      const description = getCategoryDescription(phase.category);
       
       return `
         <div class="timeline-segment" 
              style="width: ${widthPct}%; background-color: ${bgColor};"
              data-line-index="${phase.events[0].lineIndex}"
-             title="${escapeHtml(phase.category)} — ${lineCount} events — ${Math.round(duration)}ms">
-          <span class="segment-label">${escapeHtml(phase.category.substring(0, 12))}</span>
+             title="${escapeHtml(description)} — ${lineCount} events — ${Math.round(duration)}ms">
+          <span class="segment-label">${escapeHtml(description.substring(0, 18))}</span>
         </div>
       `;
     })
