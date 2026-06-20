@@ -1,20 +1,36 @@
 {
   "name": "sf-log-analyzer",
   "displayName": "SF Log Analyzer",
-  "description": "Visualize Salesforce debug logs in a VS Code webview.",
-  "version": "0.0.1",
+  "description": "Parse and visualise Salesforce debug logs — execution timeline, governor limits, code scan, and report in a VS Code webview.",
+  "version": "1.0.0",
   "publisher": "nwmorph",
+  "author": {
+    "name": "Niklas Waller",
+    "url": "https://github.com/nwmorph"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nwmorph/sf-log-analyzer.git"
+  },
+  "keywords": [
+    "salesforce",
+    "apex",
+    "debug log",
+    "log analyzer",
+    "governor limits",
+    "sfdx",
+    "salesforce cli"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Debuggers",
+    "Visualization"
   ],
-  "activationEvents": [
-    "onCommand:sf-log-analyzer.openLogVisualizer",
-    "onCommand:sf-log-analyzer.loadDebugLog",
-    "onCustomEditor:sf-log-analyzer.debugLog"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -22,12 +38,6 @@
     "watch": "tsc -watch -p ./",
     "package": "npx @vscode/vsce package"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nwmorph/sf-log-analyzer.git"
-  },
-  "author": "Niklas Waller",
-  "license": "MIT",
   "contributes": {
     "commands": [
       {

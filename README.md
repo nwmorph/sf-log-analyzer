@@ -1,52 +1,113 @@
 # SF Log Analyzer
 
-A Visual Studio Code extension for loading Salesforce debug logs and showing a higher-level visual summary.
+A VS Code extension for parsing and visualising Salesforce Apex debug logs. Open any `.log` file and instantly get an execution timeline, governor limit breakdown, code scan, and a human-readable report — without leaving your editor.
 
-## Getting Started
+---
 
-1. Open this workspace in VS Code.
-2. Run **npm install** once if you have not already.
-3. Run the `tsc: build` task or `npm run compile`.
-4. Press `F5` to launch the Extension Development Host.
-5. Open the Command Palette and run **SF Log Analyzer: Open Visualizer**.
-6. Load a debug log from file or use the active editor log.
+## Key Features
 
-## Packaging and distribution
+- **Execution Timeline** — colour-coded Gantt view of every code unit, SOQL query, DML operation, flow, and method call; pinch-to-zoom on both the overview bar and the detail pane
+- **What Happened** — chronological narrative of the transaction with per-step governor limit consumption, clearly grouped by transaction context
+- **Governor Limits** — bar chart of all key limits with used/max and percentage
+- **Validation Rules** — full list of rules evaluated with pass/fail status and formula
+- **Report tab** — executive summary, performance verdict, concerns, and a Next Best Actions section
+- **Code Scan tab** — runtime analysis (SOQL/DML in loops, recursive triggers, near-limit warnings) plus optional static analysis via Salesforce Code Analyzer (`sf code-analyzer run`)
+- **Source integration** — clicking any span opens the corresponding line in your Apex source or log file; inline descriptions pulled from `@description` Apex comments, flow `<description>` tags, and validation rule metadata
+- **Multi-transaction logs** — correctly separates and labels multiple `EXECUTION_STARTED` contexts in one log file; per-transaction governor limit chips and user breakdown
 
-This repo includes a GitHub Actions workflow that automatically builds the `.vsix` on every push and tag.
+---
 
-### For local testing
+## Requirements
 
-To package locally during development:
+| Item | Detail |
+|---|---|
+| VS Code | 1.85+ |
+| Salesforce CLI | `sf` v2, at least one authenticated org (for source linking) |
+| Salesforce Code Analyzer | Optional — `sf plugins install @salesforce/plugin-code-analyzer` |
+| Python 3.10+ | Optional — required only for Code Analyzer's Flow engine |
+
+---
+
+## Installation
+
+1. Download the `.vsix` from the [latest GitHub release](https://github.com/nwmorph/sf-log-analyzer/releases/latest)
+2. In VS Code: `Cmd+Shift+P` → **Extensions: Install from VSIX…**
+3. Select the file and reload when prompted
+
+No build tools needed at runtime.
+
+---
+
+## Build from Source
+
+```bash
+git clone https://github.com/nwmorph/sf-log-analyzer.git
+cd sf-log-analyzer
+npm install
+npm run compile
+npx @vscode/vsce package
+```
+
+---
+
+## Usage
+
+**Open a log** — right-click any `.log` file in the Explorer and choose **SF Log Analyzer: Load in Analyzer**, or double-click a `.log` file (registered as default editor for `.log` files).
+
+**Timeline** — the overview bar shows the full transaction at a glance. Click any block to highlight matching events in the detail pane. Pinch or `Ctrl+scroll` to zoom; two-finger scroll to pan; double-click to reset.
+
+**Code Scan** — runtime issues are detected automatically on every log load. Click **Run Static Analysis** to invoke `sf code-analyzer run` against the Apex classes that executed in the log.
+
+**Report** — the Next Best Actions section updates automatically after a static scan, merging runtime and static findings into a prioritised action list.
+
+---
+
+## Project Structure
+
+```
+src/
+├── extension.ts    # Entry point and command registration
+└── logPanel.ts     # Webview panel, message routing, source resolution,
+                    # sf code-analyzer invocation
+media/
+├── main.js         # All webview UI logic (parsing, rendering, interaction)
+└── styles.css      # Styles using VS Code theme variables
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Source file not found | Open the Salesforce project folder as a workspace folder in VS Code |
+| Static analysis finds no files | Same as above — class paths are resolved from the workspace |
+| `sf code-analyzer` not found | Run `sf plugins install @salesforce/plugin-code-analyzer` |
+| Flow engine Python error | Install Python 3.10+ (`brew install python3` on macOS) or add `engines: flow: disable_engine: true` to `code-analyzer.yml` |
+| Timeline shows no spans | Log captured at too low a level; re-capture with at least `APEX_CODE,FINEST` and `DB,FINEST` |
+
+---
+
+## Releasing
+
+Bump `version` in `package.json`, commit, tag, and push:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Then build and attach the `.vsix` to the GitHub release:
 
 ```bash
 npm run compile
-npm run package
+npx @vscode/vsce package
 ```
 
-### For distribution to colleagues
+---
 
-1. Push the repo to GitHub (https://github.com/nwmorph/sf-log-analyzer)
-2. When ready for release, bump `version` in `package.json` and create a Git tag:
-   ```bash
-   git tag v0.0.2
-   git push origin v0.0.2
-   ```
-3. GitHub Actions automatically builds and creates a Release with the `.vsix` attached
-4. Colleagues can download the `.vsix` from the GitHub Release
-5. In VS Code, select `Extensions: Install from VSIX...` and choose the downloaded file
+## Credits
 
-### What the workflow does
+Created by **Niklas Waller**; source code written with [Claude](https://claude.ai) (Anthropic) acting as a coding agent under Niklas's direction.
 
-- Builds and compiles on every push to `main`
-- Creates a GitHub Release (with `.vsix` attached) when you push a `v*` tag
-- Artifacts are available as downloads for testing between releases
-
-## Commands
-
-- `SF Log Analyzer: Open Visualizer`
-- `SF Log Analyzer: Load Active Editor Log`
-
-## Notes
-
-The current implementation provides a high-level summary and category chart based on log line types. Future work can add timeline views, event grouping, and deeper Salesforce debug log analysis.
+**License:** MIT

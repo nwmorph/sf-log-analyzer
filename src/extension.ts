@@ -14,7 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
         const bytes = await vscode.workspace.fs.readFile(fileUri);
         const text = Buffer.from(bytes).toString('utf8');
         const panel = LogPanel.createOrShow(context.extensionUri);
-        panel.postLogText(text, fileUri.fsPath);
+        panel.postLogText(text, fileUri.fsPath, fileUri);
       } catch (error) {
         vscode.window.showErrorMessage('Unable to read the selected log file.');
       }

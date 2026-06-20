@@ -1,0 +1,11 @@
+.vscode/**
+.sfdx/**
+.claude/**
+.github/**
+src/**
+tools/**
+node_modules/**
+*.vsix
+*.map
+.gitignore
+tsconfig.json
