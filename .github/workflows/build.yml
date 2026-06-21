@@ -22,13 +22,13 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Compile TypeScript
         run: npm run compile
 
       - name: Package VSIX
-        run: npm run package
+        run: npx @vscode/vsce package --no-dependencies --skip-license
 
       - name: Upload VSIX as artifact
         uses: actions/upload-artifact@v4
