@@ -46,7 +46,7 @@ function renderLogSummary(text, label, orgUrl, mtime) {
   summarySection.innerHTML = `
     <div class="summary-header">
       <div>
-        <h2>${label ? escapeHtml(label.split('/').pop()) : 'Debug log loaded'}</h2>
+        <h2>${label ? escapeHtml(label.split(/[\\/]/).pop()) : 'Debug log loaded'}</h2>
         <div class="header-meta">
           <span>${formatBytes(text.length)}</span>
           <span>•</span>
@@ -2817,7 +2817,7 @@ function renderStaticScanResults(msg) {
     const byRule = {};
     for (const v of viols) {
       const rule = v.rule || 'Unknown';
-      const file = (v.loc?.file || '').split('/').pop() || 'unknown';
+      const file = (v.loc?.file || '').split(/[\\/]/).pop() || 'unknown';
       const fullFile = v.loc?.file || '';
       if (!byRule[rule]) byRule[rule] = { engine: v.engine, tags: v.tags, message: v.message, resource: v.resources?.[0], files: {} };
       if (!byRule[rule].files[file]) byRule[rule].files[file] = { fullFile, lines: [] };

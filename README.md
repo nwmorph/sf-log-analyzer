@@ -17,6 +17,10 @@ A VS Code extension for parsing and visualising Salesforce Apex debug logs. Open
 
 ---
 
+## Platform support
+
+Primarily developed and tested on **macOS**. Windows is supported but less battle-tested — please [open an issue](https://github.com/nwmorph/sf-log-analyzer/issues) if you hit a platform-specific problem.
+
 ## Requirements
 
 | Item | Detail |

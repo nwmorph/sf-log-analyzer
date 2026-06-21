@@ -266,7 +266,7 @@ export class LogPanel {
       text: src,
       isTarget: from + i === center,
     }));
-    this.panel.webview.postMessage({ type: 'sourceSnippet', className, lineNumber, lines, fileName: found.fsPath.split('/').pop() });
+    this.panel.webview.postMessage({ type: 'sourceSnippet', className, lineNumber, lines, fileName: path.basename(found.fsPath) });
   }
 
   private async provideCategoryLines(category: string) {
@@ -325,9 +325,10 @@ export class LogPanel {
       return;
     }
 
-    // Check sf CLI is available
+    // Check sf CLI is available — 'which' on Mac/Linux, 'where' on Windows
+    const whichCmd = process.platform === 'win32' ? 'where sf' : 'which sf';
     const sfPath = await new Promise<string | null>(resolve => {
-      cp.exec('which sf', (err, stdout) => resolve(err ? null : stdout.trim()));
+      cp.exec(whichCmd, (err, stdout) => resolve(err ? null : stdout.trim()));
     });
     if (!sfPath) {
       this.panel.webview.postMessage({ type: 'codeScanResult', notInstalled: true });
@@ -346,8 +347,10 @@ export class LogPanel {
     this.panel.webview.postMessage({ type: 'codeScanProgress', message: `Running static analysis on ${targetFiles.length} file${targetFiles.length > 1 ? 's' : ''}…` });
 
     const outFile = path.join(os.tmpdir(), `sfla-scan-${Date.now()}.json`);
-    const targetArgs = targetFiles.map(f => `"${f}"`).join(' ');
-    const cmd = `sf code-analyzer run --target ${targetArgs} --output-file "${outFile}"`;
+    // Normalise to forward slashes for CLI args (works on both Mac and Windows)
+    const toFwd = (p: string) => p.replace(/\\/g, '/');
+    const targetArgs = targetFiles.map(f => `"${toFwd(f)}"`).join(' ');
+    const cmd = `sf code-analyzer run --target ${targetArgs} --output-file "${toFwd(outFile)}"`;
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -413,7 +416,7 @@ export class LogPanel {
         const nameLower = name.toLowerCase().replace(/[^a-z0-9]/g, '');
         for (const f of allFlows) {
           // Quick filename check first (strip prefix/suffix noise, compare normalised)
-          const base = f.fsPath.split('/').pop()?.replace('.flow-meta.xml', '') ?? '';
+          const base = path.basename(f.fsPath).replace('.flow-meta.xml', '');
           const baseLower = base.toLowerCase().replace(/[^a-z0-9]/g, '');
           if (!baseLower.includes(nameLower) && !nameLower.includes(baseLower.slice(-Math.min(baseLower.length, 20)))) {
             continue;
