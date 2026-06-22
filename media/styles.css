@@ -1854,15 +1854,21 @@ button:hover {
 }
 
 /* Point events (errors / debug markers) */
+.tl-event-group { margin-top: 6px; }
+.tl-event-group-errors .tl-point-strip { border-color: rgba(217, 69, 69, 0.3); }
+.tl-event-group-debug  .tl-point-strip { border-color: var(--vscode-editorWidget-border); }
+
 .tl-points-label {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--vscode-descriptionForeground);
-  margin-top: 8px;
   margin-bottom: 2px;
 }
+.tl-points-label-error { color: #d94545; }
+
+.tl-point-debug .tl-point-dot { background: #888 !important; }
 
 .tl-point-strip {
   border: 1px solid var(--vscode-editorWidget-border);

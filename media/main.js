@@ -821,19 +821,27 @@ function classifyCodeUnitName(rawName) {
   return 'other';
 }
 
+const PHASE_COLORS_DARK  = { 'before-trigger':'#3ca0c8','after-trigger':'#e07b39','validation':'#f0c040','flow':'#9b7fe8','trigger':'#4a9eff','soql':'#2eb87e','dml':'#aa96da','datasource':'#5ca0c8','method':'#4a9eff','system-method':'#4ecdc4','workflow':'#c8a050','other':'#555' };
+const PHASE_COLORS_LIGHT = { 'before-trigger':'#1a8bbf','after-trigger':'#d4621a','validation':'#b8860b','flow':'#7b5ea7','trigger':'#1a6fcc','soql':'#1a9960','dml':'#7060b8','datasource':'#1a78aa','method':'#1a6fcc','system-method':'#1a9990','workflow':'#a07820','other':'#999' };
+
+function phaseColor(type) {
+  const isLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  return (isLight ? PHASE_COLORS_LIGHT : PHASE_COLORS_DARK)[type] || '#888';
+}
+
 const PHASE_META = {
-  'before-trigger': { label: 'Before Trigger',  color: '#3ca0c8', show: true },
-  'after-trigger':  { label: 'After Trigger',   color: '#e07b39', show: true },
-  'validation':     { label: 'Validation',       color: '#f0c040', show: true },
-  'flow':           { label: 'Flow',             color: '#9b7fe8', show: true },
-  'trigger':        { label: 'Trigger',          color: '#4a9eff', show: true },
-  'soql':           { label: 'SOQL',             color: '#2eb87e', show: true },
-  'dml':            { label: 'DML',              color: '#aa96da', show: true },
-  'datasource':     { label: 'Data Source',      color: '#5ca0c8', show: true },
-  'method':         { label: 'Apex Method',      color: '#4a9eff', show: true },
-  'system-method':  { label: 'System Method',    color: '#4ecdc4', show: true },
-  'workflow':       { label: 'Workflow',         color: '#c8a050', show: false },
-  'other':          { label: 'Other',            color: '#3a3a3a', show: true  },
+  'before-trigger': { label: 'Before Trigger',  get color() { return phaseColor('before-trigger'); }, show: true },
+  'after-trigger':  { label: 'After Trigger',   get color() { return phaseColor('after-trigger');  }, show: true },
+  'validation':     { label: 'Validation',       get color() { return phaseColor('validation');     }, show: true },
+  'flow':           { label: 'Flow',             get color() { return phaseColor('flow');           }, show: true },
+  'trigger':        { label: 'Trigger',          get color() { return phaseColor('trigger');        }, show: true },
+  'soql':           { label: 'SOQL',             get color() { return phaseColor('soql');           }, show: true },
+  'dml':            { label: 'DML',              get color() { return phaseColor('dml');            }, show: true },
+  'datasource':     { label: 'Data Source',      get color() { return phaseColor('datasource');     }, show: true },
+  'method':         { label: 'Apex Method',      get color() { return phaseColor('method');         }, show: true },
+  'system-method':  { label: 'System Method',    get color() { return phaseColor('system-method');  }, show: true },
+  'workflow':       { label: 'Workflow',         get color() { return phaseColor('workflow');        }, show: false },
+  'other':          { label: 'Other',            get color() { return phaseColor('other');           }, show: true  },
 };
 
 function buildOverviewPhases(spans) {
@@ -907,7 +915,7 @@ function renderPointStrip(pointEvents, timelineStart, totalMs, firstNanosRef) {
     const parts = ev.line.split('|');
     const msg   = parts.slice(3).join('|').trim().substring(0, 120);
     const label = isError ? (msg || ev.category) : 'Debug';
-    return `<div class="tl-point-marker tl-cat-errors ${isError ? 'tl-point-error' : 'tl-point-debug'}"
+    return `<div class="tl-point-marker ${isError ? 'tl-cat-errors tl-point-error' : 'tl-cat-debug tl-point-debug'}"
          style="position:absolute;left:${leftPct.toFixed(3)}%;top:0;bottom:0;"
          data-line-index="${ev.lineIndex}"
          data-label="${escapeHtml(label)}"
@@ -1062,9 +1070,16 @@ function renderTimeline(events, flowNames) {
               ${escapeHtml(meta.label)}
             </button>`;
   }).join('');
-  const errFilterBtn = pointEvents.length > 0
+  const errorEvents = pointEvents.filter(e => e.category === 'FATAL_ERROR' || e.category === 'EXCEPTION_THROWN');
+  const debugEvents = pointEvents.filter(e => e.category === 'USER_DEBUG');
+  const errFilterBtn = errorEvents.length > 0
     ? `<button class="tl-filter-btn" data-filter="errors" style="--filter-color:#d94545;">
-         <span class="tl-filter-dot" style="background:#d94545;"></span>Errors / Debug
+         <span class="tl-filter-dot" style="background:#d94545;"></span>Errors (${errorEvents.length})
+       </button>`
+    : '';
+  const debugFilterBtn = debugEvents.length > 0
+    ? `<button class="tl-filter-btn" data-filter="debug" style="--filter-color:#888;">
+         <span class="tl-filter-dot" style="background:#888;"></span>Debug (${debugEvents.length})
        </button>`
     : '';
 
@@ -1076,7 +1091,7 @@ function renderTimeline(events, flowNames) {
 
   return `
     <div class="timeline-container" id="timeline-root">
-      <div class="tl-filters">${filterBtns}${errFilterBtn}
+      <div class="tl-filters">${filterBtns}${errFilterBtn}${debugFilterBtn}
         <button class="tl-filter-btn tl-filter-all active" data-filter="all">Show all</button>
       </div>
       <div class="tl-overview-label">Overview <span class="tl-click-hint">— click a block to expand</span></div>
@@ -1090,7 +1105,8 @@ function renderTimeline(events, flowNames) {
         </div>
         <div class="tl-zoom-hint" id="tl-gantt-zoom-hint" style="display:none;">Pinch or Ctrl+scroll to zoom · Scroll to pan · Double-click to reset</div>
       </div>
-      ${pointEvents.length > 0 ? `<div class="tl-points-label">Errors &amp; Exceptions</div>${pointStripHtml}` : ''}
+      ${errorEvents.length > 0 ? `<div class="tl-event-group tl-event-group-errors"><div class="tl-points-label tl-points-label-error">Errors &amp; Exceptions (${errorEvents.length})</div>${renderPointStrip(errorEvents, timelineStart, totalMs, firstNanosRef)}</div>` : ''}
+      ${debugEvents.length > 0 ? `<div class="tl-event-group tl-event-group-debug"><div class="tl-points-label">Debug statements (${debugEvents.length})</div>${renderPointStrip(debugEvents, timelineStart, totalMs, firstNanosRef)}</div>` : ''}
       <div id="tl-line-detail" class="tl-line-detail" style="display:none;"></div>
       <div class="timeline-axis">
         <span class="axis-start">${startTime}</span>
