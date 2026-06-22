@@ -6,12 +6,13 @@ A VS Code extension for parsing and visualising Salesforce Apex debug logs. Open
 
 ## Key Features
 
-- **Execution Timeline** — colour-coded Gantt view of every code unit, SOQL query, DML operation, flow, and method call; pinch-to-zoom on both the overview bar and the detail pane
+- **Execution Timeline** — colour-coded Gantt view of every code unit, SOQL query, DML operation, flow, and method call; pinch-to-zoom on both the overview bar and the detail pane; adapts to VS Code light and dark themes
 - **What Happened** — chronological narrative of the transaction with per-step governor limit consumption, clearly grouped by transaction context
 - **Governor Limits** — bar chart of all key limits with used/max and percentage
 - **Validation Rules** — full list of rules evaluated with pass/fail status and formula
 - **Report tab** — executive summary, performance verdict, concerns, and a Next Best Actions section
 - **Code Scan tab** — runtime analysis (SOQL/DML in loops, recursive triggers, near-limit warnings) plus optional static analysis via Salesforce Code Analyzer (`sf code-analyzer run`)
+- **Raw Log tab** — the full unprocessed log text with a line filter and copy-all button; useful for searching raw content or correlating with external tools
 - **Source integration** — clicking any span opens the corresponding line in your Apex source or log file; inline descriptions pulled from `@description` Apex comments, flow `<description>` tags, and validation rule metadata
 - **Multi-transaction logs** — correctly separates and labels multiple `EXECUTION_STARTED` contexts in one log file; per-transaction governor limit chips and user breakdown
 
@@ -58,11 +59,13 @@ npx @vscode/vsce package
 
 **Open a log** — right-click any `.log` file in the Explorer and choose **SF Log Analyzer: Load in Analyzer**, or double-click a `.log` file (registered as default editor for `.log` files).
 
-**Timeline** — the overview bar shows the full transaction at a glance. Click any block to highlight matching events in the detail pane. Pinch or `Ctrl+scroll` to zoom; two-finger scroll to pan; double-click to reset.
+**Timeline** — the overview bar shows the full transaction at a glance. Click any block to highlight matching events in the detail pane. Pinch or `Ctrl+scroll` to zoom; two-finger scroll to pan; double-click to reset. Errors and debug statements appear as separate labelled strips below the timeline, each with its own filter button.
 
 **Code Scan** — runtime issues are detected automatically on every log load. Click **Run Static Analysis** to invoke `sf code-analyzer run` against the Apex classes that executed in the log.
 
 **Report** — the Next Best Actions section updates automatically after a static scan, merging runtime and static findings into a prioritised action list.
+
+**Raw Log** — the full unprocessed log text. Type in the filter box to show only matching lines. Useful for correlating with external tools or searching for values the analysis engine doesn't surface.
 
 ---
 

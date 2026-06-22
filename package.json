@@ -2,7 +2,7 @@
   "name": "sf-log-analyzer",
   "displayName": "SF Log Analyzer",
   "description": "Parse and visualise Salesforce debug logs — execution timeline, governor limits, code scan, and report in a VS Code webview.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "nwmorph",
   "author": {
     "name": "Niklas Waller",

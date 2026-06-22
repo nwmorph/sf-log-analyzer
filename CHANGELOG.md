@@ -1,5 +1,24 @@
 # SF Log Analyzer Changelog
 
+## v1.1.0 — 2026-06-22
+
+### Raw Log tab
+- New tab showing the full unprocessed log text
+- Filter-lines input — type any string to narrow displayed lines with a live match/total count
+- Copy all button to copy the full log (or the filtered subset) to the clipboard
+
+### Timeline — Error and Debug filter buttons
+- "Errors / Debug" combined button replaced with separate **Errors (N)** and **Debug (N)** buttons, each showing the count and only appearing when events of that type are present
+- Error and debug markers are now independently filterable — clicking "Errors (N)" hides debug markers and vice versa
+- Point strip split into two labelled rows: **Errors & Exceptions** (red label) and **Debug statements**, matching how the Chrome extension presents them
+
+### Timeline — light/dark theme-aware phase colours
+- Timeline segment colours now adapt to the active VS Code colour theme
+- Dark theme: original bright colours unchanged
+- Light theme: deeper, higher-contrast hues so segments remain readable against white/light backgrounds
+
+---
+
 ## v1.0.0 — 2026-06-20
 
 Initial public release.
