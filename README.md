@@ -7,10 +7,10 @@ A VS Code extension for parsing and visualising Salesforce Apex debug logs. Open
 ## Key Features
 
 - **Execution Timeline** — colour-coded Gantt view of every code unit, SOQL query, DML operation, flow, and method call; pinch-to-zoom on both the overview bar and the detail pane; adapts to VS Code light and dark themes
-- **What Happened** — chronological narrative of the transaction with per-step governor limit consumption, clearly grouped by transaction context
+- **What Happened** — chronological narrative of the transaction with per-step governor limit consumption, clearly grouped by transaction context; each step type (trigger, validation rule, flow, DML, datasource) shows a plain-English description of what it does
 - **Governor Limits** — bar chart of all key limits with used/max and percentage
 - **Validation Rules** — full list of rules evaluated with pass/fail status and formula
-- **Report tab** — executive summary, performance verdict, concerns, and a Next Best Actions section
+- **Report tab** — executive summary, performance verdict, concerns, and a Next Best Actions section (shown first on load)
 - **Code Scan tab** — runtime analysis (SOQL/DML in loops, recursive triggers, near-limit warnings) plus optional static analysis via Salesforce Code Analyzer (`sf code-analyzer run`)
 - **Raw Log tab** — the full unprocessed log text with a line filter and copy-all button; useful for searching raw content or correlating with external tools
 - **Source integration** — clicking any span opens the corresponding line in your Apex source or log file; inline descriptions pulled from `@description` Apex comments, flow `<description>` tags, and validation rule metadata
@@ -100,8 +100,8 @@ media/
 Bump `version` in `package.json`, commit, tag, and push:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 Then build and attach the `.vsix` to the GitHub release:

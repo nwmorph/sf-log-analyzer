@@ -93,9 +93,9 @@ function renderLogSummary(text, label, orgUrl, mtime) {
     </div>
 
     <div class="tab-bar">
+      <button class="tab-btn" data-tab="report">Report</button>
       <button class="tab-btn active" data-tab="timeline">Timeline</button>
       <button class="tab-btn" data-tab="scan">Code Scan ${result.scanFindings.filter(f => f.severity === 'critical').length > 0 ? `<span class="tab-badge tab-badge-critical">${result.scanFindings.filter(f => f.severity === 'critical').length}</span>` : result.scanFindings.length > 0 ? `<span class="tab-badge">${result.scanFindings.length}</span>` : ''}</button>
-      <button class="tab-btn" data-tab="report">Report</button>
       <button class="tab-btn" data-tab="raw">Raw Log</button>
     </div>
 
@@ -1292,6 +1292,11 @@ function attachInteractionHandlers() {
         seg.style.pointerEvents = '';
       });
 
+      // Always close the line-detail panel when changing overview selection
+      const lineDetailEl = document.getElementById('tl-line-detail');
+      if (lineDetailEl) lineDetailEl.style.display = 'none';
+      document.querySelectorAll('.segment-selected').forEach(s => s.classList.remove('segment-selected'));
+
       if (wasActive) {
         detailEl.style.display = 'none';
         return;
@@ -1347,6 +1352,12 @@ function attachInteractionHandlers() {
       document.querySelectorAll('.tl-filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
+      // Close both detail panels — filter change invalidates any open selection
+      if (detailEl) detailEl.style.display = 'none';
+      const lineDetailEl = document.getElementById('tl-line-detail');
+      if (lineDetailEl) lineDetailEl.style.display = 'none';
+      document.querySelectorAll('.segment-selected').forEach(s => s.classList.remove('segment-selected'));
+
       // In the detail gantt — clear range highlights when filter changes
       if (detailEl) {
         detailEl.querySelectorAll('.timeline-segment').forEach(seg => {
@@ -1363,6 +1374,19 @@ function attachInteractionHandlers() {
         seg.style.visibility = visible ? 'visible' : 'hidden';
         seg.style.pointerEvents = visible ? 'auto' : 'none';
       });
+
+      // Show/hide the errors and debug event groups
+      const errGroup   = document.querySelector('.tl-event-group-errors');
+      const debugGroup = document.querySelector('.tl-event-group-debug');
+      if (errGroup)   errGroup.style.display   = (filter === 'all' || filter === 'errors') ? '' : 'none';
+      if (debugGroup) debugGroup.style.display  = (filter === 'all' || filter === 'debug')  ? '' : 'none';
+
+      // Update the overview label to reflect the active filter
+      const overviewLabel = document.querySelector('.tl-overview-label');
+      if (overviewLabel) {
+        const filterLabel = filter === 'all' ? '' : ` — ${btn.textContent.trim()}`;
+        overviewLabel.innerHTML = `OVERVIEW${filterLabel} <span class="tl-click-hint">— click a block to expand</span>`;
+      }
     });
   });
 
@@ -2234,6 +2258,7 @@ function renderNarrative(result) {
 
     let title = '';
     let subtitle = '';
+    let description = '';
     let warningNote = '';
 
     if (s.type === 'before-trigger' || s.type === 'after-trigger') {
@@ -2244,6 +2269,9 @@ function renderNarrative(result) {
       } else {
         title = escapeHtml(s.name);
       }
+      description = s.type === 'before-trigger'
+        ? 'Apex trigger that runs before the record is saved — can modify field values or prevent the save.'
+        : 'Apex trigger that runs after the record is committed — used for cross-object updates and async logic.';
     } else if (s.type === 'validation') {
       const obj = (s.name.split(':')[1] || '').trim();
       title = `Validation — ${escapeHtml(obj)}`;
@@ -2254,13 +2282,17 @@ function renderNarrative(result) {
           ? `${ruleCount} rules · <span class="narrative-error">${failCount} failed</span>`
           : `${ruleCount} rules · all passed`;
       }
+      description = 'Salesforce evaluates validation rules against the record before allowing the save to proceed.';
     } else if (s.type === 'flow') {
       title = escapeHtml(s.name);
+      description = 'An automated process built in Flow Builder — runs declarative logic without Apex code.';
     } else if (s.type === 'dml') {
       title = escapeHtml(s.name);
       subtitle = s.rows !== null ? `${s.rows} row${s.rows === 1 ? '' : 's'}` : '';
+      description = 'A database write operation (insert, update, delete, or upsert) on a Salesforce object.';
     } else if (s.type === 'datasource') {
       title = escapeHtml(s.name.replace(/^ApexDataSource:\s*/i, ''));
+      description = 'An Apex-defined data source making an external callout to retrieve or write data.';
     } else {
       title = escapeHtml(s.name);
     }
@@ -2294,6 +2326,7 @@ function renderNarrative(result) {
             <span class="narr-title">${title}${countBadge}</span>
           </div>
           ${subtitle ? `<div class="narr-subtitle">${subtitle}</div>` : ''}
+          ${description ? `<div class="narr-description">${escapeHtml(description)}</div>` : ''}
           ${warningNote}
         </div>
       </div>`;

@@ -1,5 +1,20 @@
 # SF Log Analyzer Changelog
 
+## v1.2.0 — 2026-06-23
+
+### What Happened — step descriptions
+- Each step in the narrative now shows a plain-English description below the title: before/after triggers, validation rules, flows, DML operations, and Apex data sources each get a one-line explanation of what that step type does
+
+### Timeline — filter fixes
+- Switching the filter (All / Errors / Debug) now closes any open detail or line-detail panel and clears segment selections, preventing stale highlights from a previous filter state
+- Error and debug event groups are now correctly shown or hidden when switching filters independently
+- The overview label updates to reflect the active filter (e.g. "OVERVIEW — Errors")
+
+### Tab order
+- **Report** tab moved to first position so the executive summary is the default landing view after timeline
+
+---
+
 ## v1.1.0 — 2026-06-22
 
 ### Raw Log tab

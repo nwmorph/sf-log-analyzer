@@ -556,6 +556,13 @@ button:hover {
   font-size: 0.8rem;
   color: var(--vscode-descriptionForeground);
 }
+.narr-description {
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.75;
+  font-style: italic;
+}
 
 .narr-badge {
   display: inline-block;
